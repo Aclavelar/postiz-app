@@ -205,7 +205,7 @@ const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024; // 1 GB
 export const MediaBox: FC<{
   setMedia: (params: { id: string; path: string }[]) => void;
   standalone?: boolean;
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'cover';
   closeModal: () => void;
 }> = ({ type, standalone, setMedia }) => {
   const [page, setPage] = useState(0);
@@ -238,6 +238,8 @@ export const MediaBox: FC<{
     allowedFileTypes:
       type == 'image'
         ? 'image/*'
+        : type == 'cover'
+        ? 'image/jpeg,image/png'
         : type == 'video'
         ? 'video/mp4'
         : 'image/*,video/mp4',
@@ -529,6 +531,13 @@ export const MediaBox: FC<{
               ?.filter((f: any) => {
                 if (type === 'video') {
                   return hasExtension(f.path, 'mp4');
+                } else if (type === 'cover') {
+                  const fileName = f.originalName || f.path;
+                  return (
+                    hasExtension(fileName, 'jpg') ||
+                    hasExtension(fileName, 'jpeg') ||
+                    hasExtension(fileName, 'png')
+                  );
                 } else if (type === 'image') {
                   return !hasExtension(f.path, 'mp4');
                 }
@@ -784,6 +793,24 @@ export const MultiMediaComponent: FC<{
                               <MediaComponentInner
                                 media={media as any}
                                 onClose={close}
+                                onOpenImageLibrary={(onSelectImage) =>
+                                  modals.openModal({
+                                    title: t('media_library', 'Media Library'),
+                                    children: (closeLibrary) => (
+                                      <MediaBox
+                                        type="cover"
+                                        closeModal={closeLibrary}
+                                        setMedia={(images) => {
+                                          const selectedImage = images[0];
+                                          if (selectedImage) {
+                                            onSelectImage(selectedImage);
+                                          }
+                                          closeLibrary();
+                                        }}
+                                      />
+                                    ),
+                                  })
+                                }
                                 onSelect={(value: any) => {
                                   onChange({
                                     target: {

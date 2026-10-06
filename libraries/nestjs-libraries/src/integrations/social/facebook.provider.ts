@@ -832,6 +832,40 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     let finalId = '';
     let finalUrl = '';
     if (hasExtension(firstPost?.media?.[0]?.path, 'mp4')) {
+      const coverPath = firstPost?.media?.[0]?.thumbnail;
+      let videoBody: BodyInit;
+      let videoHeaders: HeadersInit | undefined;
+      if (coverPath) {
+        const coverBytes = await this.readOrFetch(coverPath);
+        const coverType = hasExtension(coverPath, 'png')
+          ? 'image/png'
+          : 'image/jpeg';
+        const formData = new FormData();
+        formData.append('file_url', firstPost?.media?.[0]?.path!);
+        formData.append('description', firstPost.message || '');
+        if (firstPost?.settings?.title) {
+          formData.append('title', firstPost.settings.title);
+        }
+        formData.append('published', 'true');
+        formData.append(
+          'thumb',
+          new Blob([new Uint8Array(coverBytes)], { type: coverType }),
+          hasExtension(coverPath, 'png') ? 'thumbnail.png' : 'thumbnail.jpg'
+        );
+        videoBody = formData;
+      } else {
+        videoBody = JSON.stringify({
+          file_url: firstPost?.media?.[0]?.path!,
+          description: firstPost.message,
+          ...(firstPost?.settings?.title
+            ? { title: firstPost.settings.title }
+            : {}),
+          published: true,
+        });
+        videoHeaders = {
+          'Content-Type': 'application/json',
+        };
+      }
       const {
         id: videoId,
         permalink_url,
@@ -841,17 +875,8 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${id}/videos?access_token=${accessToken}&fields=id,permalink_url`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              file_url: firstPost?.media?.[0]?.path!,
-              description: firstPost.message,
-              ...(firstPost?.settings?.title
-                ? { title: firstPost.settings.title }
-                : {}),
-              published: true,
-            }),
+            ...(videoHeaders ? { headers: videoHeaders } : {}),
+            body: videoBody,
           },
           'upload mp4'
         )

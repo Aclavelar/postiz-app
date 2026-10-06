@@ -290,6 +290,9 @@ export const CreateThumbnail: FC<{
 
 export const MediaComponentInner: FC<{
   onClose: () => void;
+  onOpenImageLibrary?: (
+    onSelect: (media: { id: string; path: string }) => void
+  ) => void;
   onSelect: (media: {
     id: string;
     name: string;
@@ -308,7 +311,7 @@ export const MediaComponentInner: FC<{
       }
     | undefined;
 }> = (props) => {
-  const { onClose, onSelect, media } = props;
+  const { onClose, onSelect, onOpenImageLibrary, media } = props;
   const setActivateExitButton = useLaunchStore((e) => e.setActivateExitButton);
   const newFetch = useFetch();
   const [newThumbnail, setNewThumbnail] = useState<string | null>(null);
@@ -403,10 +406,25 @@ export const MediaComponentInner: FC<{
                     onClick={() => setIsEditingThumbnail(true)}
                     className="bg-third text-textColor px-6 py-2 rounded-lg hover:bg-opacity-80 transition-all flex-1 border border-tableBorder"
                   >
-                    {media.thumbnail || newThumbnail
+                    {thumbnail || newThumbnail
                       ? 'Edit Thumbnail'
                       : 'Create Thumbnail'}
                   </button>
+                  {onOpenImageLibrary && (
+                    <button
+                      disabled={loading}
+                      onClick={() =>
+                        onOpenImageLibrary((selectedMedia) => {
+                          setNewThumbnail(null);
+                          setThumbnail(selectedMedia.path);
+                          setIsEditingThumbnail(false);
+                        })
+                      }
+                      className="bg-third text-textColor px-6 py-2 rounded-lg hover:bg-opacity-80 transition-all flex-1 border border-tableBorder"
+                    >
+                      Select from Media Library
+                    </button>
+                  )}
                   {(thumbnail || newThumbnail) && (
                     <button
                       disabled={loading}
